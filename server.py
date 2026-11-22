@@ -212,7 +212,7 @@ class MessengerServer(ThreadingHTTPServer):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = 'Qanat/1.0'
+    server_version = 'NonameMessenger/2.0'
 
     def setup(self):
         super().setup()
@@ -263,7 +263,9 @@ class Handler(BaseHTTPRequestHandler):
             if method == 'POST' and path.path == '/logout':
                 with self.server.store.connect() as db:
                     db.execute('DELETE FROM sessions WHERE digest=?', (hashlib.sha256(token.encode()).hexdigest(),))
-                    db.execute('UPDATE users SET last_seen=0 WHERE id=?', (user['id'],))
+                    db.execute('UPDATE users SET last_seen=0 WHERE id=? AND NOT EXISTS '
+                               '(SELECT 1 FROM sessions WHERE user_id=? AND expires>?)',
+                               (user['id'], user['id'], time.time()))
                 return self.reply(200, {'ok': True})
             if method == 'GET' and path.path == '/sync':
                 query = parse_qs(path.query)

@@ -19,8 +19,17 @@ class NoRedirect(HTTPRedirectHandler):
 
 
 class Client:
-    def __init__(self, url='http://127.0.0.1:8765', ca=None):
-        parsed = urlsplit(url)
+    def __init__(self, url='http://127.0.0.1:8765', ca=None, ca_pem=None):
+        try:
+            if not isinstance(url, str):
+                raise ValueError()
+            url = url.strip()
+            parsed = urlsplit(url)
+            port = parsed.port
+            if port is not None and port < 1:
+                raise ValueError()
+        except ValueError:
+            raise ClientError('Сервер мекенжайы немесе порты жарамсыз.') from None
         try:
             local = ipaddress.ip_address(parsed.hostname or '').is_loopback
         except ValueError:
@@ -33,7 +42,10 @@ class Client:
             raise ClientError('Қашықтағы серверге HTTPS арқылы қосылыңыз.')
         self.url = url.rstrip('/')
         self.token = None
-        context = ssl.create_default_context(cafile=ca)
+        try:
+            context = ssl.create_default_context(cafile=ca, cadata=ca_pem)
+        except (OSError, ValueError, TypeError):
+            raise ClientError('Сенімді сертификатты оқу мүмкін болмады.') from None
         context.minimum_version = ssl.TLSVersion.TLSv1_2
         self.opener = build_opener(ProxyHandler({}), HTTPSHandler(context=context), NoRedirect())
 

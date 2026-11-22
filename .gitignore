@@ -1,8 +1,13 @@
 __pycache__/
 *.py[cod]
 .venv/
+.python/
+.runtime/
+.build/
 .env
 data/
 *.sqlite3*
+!Project_Database.sqlite3
 *.pem
 *.key
+connection.json
